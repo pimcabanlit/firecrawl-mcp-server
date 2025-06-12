@@ -1,0 +1,11 @@
+{
+  "meta": null,
+  "content": [
+    {
+      "type": "text",
+      "text": "Failed to scrape URL. Status code: 408. Error: Request timed out",
+      "annotations": null
+    }
+  ],
+  "isError": true
+}
