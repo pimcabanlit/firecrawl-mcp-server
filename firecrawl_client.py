@@ -281,24 +281,7 @@ class FirecrawlMCPClient:
     async def firecrawl_extract(self, urls, prompt, system_prompt, schema, 
                             allow_external_links=False, enable_web_search=False, 
                             include_subdomains=False, save_to_file=False,
-                            save_as_excel=False, filename="extracted_data"):
-        """
-        Extract structured data from web pages using Firecrawl's extract tool.
-        
-        Args:
-            urls (list): List of URLs to extract from.
-            prompt (str): Prompt for LLM extraction.
-            system_prompt (str): System prompt to guide LLM.
-            schema (dict): JSON schema to structure the extracted data.
-            allow_external_links (bool): Allow following external links.
-            enable_web_search (bool): Enable web search.
-            include_subdomains (bool): Include subdomains.
-            save_to_file (bool): Whether to save result to file.
-            filename (str): Optional filename.
-        
-        Returns:
-            dict or None: Extracted structured data or None on failure.
-        """
+                            save_as_excel=False, filename=None):
         try:
             params = {
                 "urls": urls,
@@ -312,21 +295,15 @@ class FirecrawlMCPClient:
             print(f"🧠 Extracting with params: {json.dumps(params, indent=2)}")
             result = await self.session.call_tool("firecrawl_extract", params)
 
-            # ✅ Optionally save as Excel
             if save_as_excel:
                 self.save_to_table(result, filename, format="excel")
 
-            # if hasattr(result, 'content'):
-            #     print("✅ Extraction successful. Preview:")
-            #     for item in result.content:
-            #         print(json.dumps(item.text, indent=2))
-            # else:
-            #     print("⚠️ No content found in extraction result.")
-            
-            # if save_to_file:
-            #     if not filename:
-            #         filename = f"extract_{datetime.now().isoformat().replace(':', '_')}"
-            #     self.save_to_file(result, filename)
+            if save_to_file:
+                if not filename:
+                    filename = f"extract_{datetime.now().isoformat().replace(':', '_')}.json"
+                filepath = Path(filename).resolve()
+                self.save_to_file(result, str(filepath))
+                print(f"✅ Result saved to: {filepath}")
 
             return result
         except Exception as e:
@@ -650,7 +627,6 @@ def interactive_mode():
                                 print("Enter JSON schema (or press Enter for a simple product example):")
                                 schema_input = input().strip()
                                 if not schema_input:
-                                    # Provide a default schema example
                                     schema = {
                                         "type": "object",
                                         "properties": {
@@ -667,11 +643,6 @@ def interactive_mode():
                                     except json.JSONDecodeError:
                                         print("Invalid JSON schema, proceeding without schema")
                             
-                            # Optional parameters
-                            allow_external = input("Allow external links? (y/n): ").strip().lower() == 'y'
-                            enable_search = input("Enable web search? (y/n): ").strip().lower() == 'y'
-                            include_subdomains = input("Include subdomains? (y/n): ").strip().lower() == 'y'
-                            
                             save_choice = input("Save to file? (y/n): ").strip().lower()
                             save_to_file = save_choice == 'y'
                             filename = None
@@ -679,25 +650,20 @@ def interactive_mode():
                                 filename = input("Enter filename (or press Enter for auto-generated): ").strip()
                                 if not filename:
                                     filename = None
-                            
-                            # Prepare kwargs
-                            kwargs = {
-                                "allowExternalLinks": allow_external,
-                                "enableWebSearch": enable_search,
-                                "includeSubdomains": include_subdomains
-                            }
-                            if system_prompt:
-                                kwargs["systemPrompt"] = system_prompt
-                            if schema:
-                                kwargs["schema"] = schema
-                            
+                            save_as_excel = False
+                            if save_to_file:
+                                excel_choice = input("Save as Excel? (y/n): ").strip().lower()
+                                save_as_excel = excel_choice == 'y'
+                            # Final API call
                             result = await client.firecrawl_extract(
                                 urls=urls,
                                 prompt=prompt,
+                                schema=schema,
+                                system_prompt=system_prompt or None,
                                 save_to_file=save_to_file,
-                                filename=filename,
-                                **kwargs
+                                filename=filename
                             )
+
                             if result and not save_to_file:
                                 print(f"\n🧠 Extract result preview:")
                                 print(f"Result type: {type(result)}")
