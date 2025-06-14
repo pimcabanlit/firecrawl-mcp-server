@@ -4,6 +4,7 @@ import openpyxl
 import pandas as pd
 import json
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 from mcp import ClientSession, StdioServerParameters
@@ -131,7 +132,32 @@ class FirecrawlMCPClient:
                 print(f"❌ Error saving Markdown: {e}")
         
         return json_path, md_path if text_content else None
-    
+
+    def split_markdown_reviews(markdown_text, name=None, price=None):
+        """
+        Splits Markdown-formatted reviews in the form:
+        [title](url): review text
+        into a list of structured dictionaries.
+        """
+        if not markdown_text:
+            return []
+
+        # Use regex to match [title](url): review
+        pattern = r"\[([^\]]+)\]\((https?://[^\)]+)\):\s*(.*?)(?=(\n\[|$))"
+        matches = re.findall(pattern, markdown_text, re.DOTALL)
+
+        results = []
+        for title, url, review, _ in matches:
+            results.append({
+                "name": name,
+                "price": price,
+                "title": title.strip(),
+                "url": url.strip(),
+                "review": review.strip().replace("\n", " ")
+            })
+        
+        return results 
+
     def _make_serializable(self, obj):
         """Convert object to JSON-serializable format"""
         if hasattr(obj, '__dict__'):
@@ -296,7 +322,20 @@ class FirecrawlMCPClient:
             result = await self.session.call_tool("firecrawl_extract", params)
 
             if save_as_excel:
-                self.save_to_table(result, filename, format="excel")
+                if hasattr(result, 'content') and isinstance(result.content, list):
+                    for item in result.content:
+                        data = item.text if hasattr(item, 'text') else {}
+                        if isinstance(data, dict):
+                            if "description" in data and isinstance(data["description"], str):
+                                # 🔍 Split markdown-formatted reviews
+                                reviews = split_markdown_reviews(data["description"], name=data.get("name"))
+                                self.save_to_table(reviews, filename or "extract.xlsx", format="excel")
+                            else:
+                                # Save raw dictionary as a single row
+                                self.save_to_table([data], filename or "extract.xlsx", format="excel")
+                    print(f"✅ Excel saved to: {filename or 'extract.xlsx'}")
+                else:
+                    print("⚠️ No structured content found to save as Excel.")
 
             if save_to_file:
                 if not filename:
@@ -661,25 +700,23 @@ def interactive_mode():
                                 schema=schema,
                                 system_prompt=system_prompt or None,
                                 save_to_file=save_to_file,
+                                save_as_excel=save_as_excel,
                                 filename=filename
                             )
 
                             if result and not save_to_file:
-                                print(f"\n🧠 Extract result preview:")
-                                print(f"Result type: {type(result)}")
-                                if hasattr(result, 'content'):
-                                    if hasattr(result.content, '__iter__') and not isinstance(result.content, str):
-                                        for i, item in enumerate(result.content):
-                                            print(f"  Extracted {i+1}:")
-                                            if hasattr(item, 'text'):
-                                                preview = str(item.text)[:500]
-                                                print(f"    {preview}{'...' if len(str(item.text)) > 500 else ''}")
-                                            else:
-                                                print(f"    {str(item)[:500]}...")
-                                    else:
-                                        print(f"Content: {str(result.content)[:1000]}...")
-                                else:
-                                    print(f"Raw result: {str(result)[:1000]}...")
+                                # 👇 Extract from markdown-style description if present
+                                if hasattr(result, 'content') and isinstance(result.content, list):
+                                    for item in result.content:
+                                        data = item.text if hasattr(item, 'text') else {}
+                                        if isinstance(data, dict) and "description" in data:
+                                            reviews = split_markdown_reviews(
+                                                markdown_text=data.get("description", ""),
+                                                name=data.get("name"),
+                                                price=data.get("price")
+                                            )
+                                            client.save_to_table(reviews, "tgif_reviews.xlsx", format="excel")
+                                            print("✅ Markdown reviews parsed and saved to tgif_reviews.xlsx")
                 
                 elif choice == "7":
                     break

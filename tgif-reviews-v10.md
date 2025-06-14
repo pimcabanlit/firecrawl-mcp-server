@@ -1,0 +1,22 @@
+{
+  "reviews": [
+    {
+      "rating": 2,
+      "reviewDate": "2011-11-01",
+      "reviewText": "We were at Robinsons in Manilla. My wife had a Texas ribeye which was cold and less than 3/8 thick. I had a very bad filet mignon of which a 1/3 was uneatable. With one Ceasar and two sodast hey charged us $77, never again.",
+      "reviewerName": "DongenAlbertd"
+    },
+    {
+      "rating": 3,
+      "reviewDate": "2011-10-01",
+      "reviewText": "TGI Fridays serve American casual fares with huge portions to match the price. The first time we went there, everyone ordered a separate entree and it ended up being too much food, so the 2nd time around, we were smarter and the lighter eaters choose to share their main dishes, and ordered an appetizer. . .that worked out better for us.",
+      "reviewerName": "hkfornow"
+    },
+    {
+      "rating": 5,
+      "reviewDate": "2011-07-01",
+      "reviewText": "We were a party of 12 and sat outside in the cafe's spacious patio. Our food was served promptly and everyone was pleased with the food. They serve stateside portions so bring your appetite. The only noticible differance between this TGI Fridays and one stateside is they serve rice with the entrees. Expect to pay $ prices as this place is not cheap, but it was well worth it.",
+      "reviewerName": "oneiloilokano"
+    }
+  ]
+}

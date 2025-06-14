@@ -1,0 +1,11 @@
+{
+  "meta": null,
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"name\": \"TGI Friday's\",\n  \"price\": 0,\n  \"description\": \"User reviews extracted from TGI Friday's in Manila.\"\n}",
+      "annotations": null
+    }
+  ],
+  "isError": false
+}
